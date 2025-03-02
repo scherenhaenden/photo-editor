@@ -1,9 +1,19 @@
 package ui
 
 import (
+	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"io"
+	"io/ioutil"
+
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -60,26 +70,66 @@ func CreateImageArea(translations map[string]string) *ImageArea {
 	}
 }
 
+// GetImageDisplay returns the image display widget.
+func (ia *ImageArea) GetImageDisplay() *canvas.Image {
+	return ia.imageDisplay
+}
+
+func decodeImage(r io.Reader) (image.Image, string, error) {
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, "", err
+	}
+	return image.Decode(bytes.NewReader(data))
+}
+
 // ----------------------------------------------------------------------
-// SetImage updates the displayed image dynamically.
-// If imgStream is nil, the placeholder text is shown.
+// SetImage updates the displayed image dynamically from an io.Reader.
 // ----------------------------------------------------------------------
 func (ia *ImageArea) SetImage(imgStream io.Reader) {
 	if imgStream == nil {
 		ia.textOverlay.Show()
 		ia.imageDisplay.Hide()
 	} else {
-		// Decode the image from the stream
-		img, _, err := image.Decode(imgStream)
+
+		data, err := ioutil.ReadAll(imgStream)
 		if err != nil {
-			ia.textOverlay.Text = "Error loading image"
+			ia.textOverlay.Text = err.Error()
 			ia.textOverlay.Refresh()
 			return
 		}
-		// Update the image display
+		// **DEBUGGING CHECKS (Add these):**
+		fmt.Printf("Data length: %d\n", len(data))
+		if len(data) > 0 {
+			fmt.Printf("First 10 bytes (hex): %x\n", data[:10]) // Show the first 10 bytes in hex
+		}
+
+		// Decode the image from the stream
+		img, _, err := image.Decode(bytes.NewReader(data))
+		if err != nil {
+			//ia.textOverlay.Text = "Error loading image"
+			ia.textOverlay.Text = err.Error()
+			ia.textOverlay.Refresh()
+			return
+		}
 		ia.imageDisplay.Image = img
 		ia.imageDisplay.Refresh()
 		ia.imageDisplay.Show()
 		ia.textOverlay.Hide()
 	}
+}
+
+// ----------------------------------------------------------------------
+// SetImageFromImage updates the displayed image directly from an image.Image.
+// ----------------------------------------------------------------------
+func (ia *ImageArea) SetImageFromImage(img image.Image) {
+	if img == nil {
+		ia.textOverlay.Show()
+		ia.imageDisplay.Hide()
+		return
+	}
+	ia.imageDisplay.Image = img
+	ia.imageDisplay.Refresh()
+	ia.imageDisplay.Show()
+	ia.textOverlay.Hide()
 }
