@@ -22,7 +22,7 @@ func CreateImageArea() fyne.CanvasObject {
 	textOverlay.TextStyle = fyne.TextStyle{Bold: true}
 
 	// Crear un contenedor que llena todo el espacio y coloca el texto en el centro.
-	imageViewContainer := container.NewMax(imageCanvas, container.NewCenter(textOverlay))
+	imageViewContainer := container.NewStack(imageCanvas, container.NewCenter(textOverlay))
 
 	return imageViewContainer
 }
