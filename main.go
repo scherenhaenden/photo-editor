@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fyne.io/fyne/v2/storage"
 	"photo-editor/ui"
 
 	"fyne.io/fyne/v2"
@@ -248,27 +249,52 @@ func main() {
 	)
 	rightTabs.SetTabLocation(container.TabLocationTrailing)
 
-	//----------------------------------------------------------------------
-	// ÁREA CENTRAL: VISOR DE IMÁGENES
-	//----------------------------------------------------------------------
-	// Fondo gris oscuro + texto centrado
-	/*imageCanvas := canvas.NewRectangle(color.RGBA{R: 60, G: 60, B: 60, A: 255})
-	textOverlay := canvas.NewText("Área Central - Visor de Imágenes (Placeholder)", color.White)
-	textOverlay.Alignment = fyne.TextAlignCenter
-	textOverlay.TextStyle = fyne.TextStyle{Bold: true}*/
+	// Example translations
+	translations := map[string]string{
+		"image_placeholder": "Cargando imagen...", // Spanish translation
+	}
 
-	//imageViewContainer := container.NewMax(imageCanvas, container.NewCenter(textOverlay))
-	imageViewContainer := ui.CreateImageArea()
+	imageView := ui.CreateImageArea(translations)
+
+	// Button to load a new image
+	loadButton := widget.NewButton("Load Image", func() {
+		openDialog := dialog.NewFileOpen(func(uri fyne.URIReadCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, myWindow)
+				return
+			}
+			if uri == nil {
+				return
+			}
+			// Actualizar la imagen usando el stream del archivo seleccionado
+			imageView.SetImage(uri)
+			uri.Close()
+		}, myWindow)
+		// Filtrar para que solo se muestren imágenes
+		openDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png"}))
+		openDialog.Show()
+	})
 
 	//----------------------------------------------------------------------
 	// BARRA INFERIOR: FILMSTRIP + STATUS
 	//----------------------------------------------------------------------
 	filmstripLabel := widget.NewLabel("Carrete de imágenes (Placeholder)")
-	filmstripThumbnails := container.NewHBox(
+	/*filmstripThumbnails := container.NewHBox(
 		widget.NewButton("Foto 1", func() {}),
 		widget.NewButton("Foto 2", func() {}),
 		widget.NewButton("Foto 3", func() {}),
 		widget.NewButton("Foto 4", func() {}),
+	)*/
+
+	filmstripContainer := container.NewVBox(
+		loadButton,
+		widget.NewLabel("Carrete de imágenes (Placeholder)"),
+		container.NewHBox(
+			widget.NewButton("Foto 1", func() {}),
+			widget.NewButton("Foto 2", func() {}),
+			widget.NewButton("Foto 3", func() {}),
+			widget.NewButton("Foto 4", func() {}),
+		),
 	)
 
 	// Status bar
@@ -279,7 +305,7 @@ func main() {
 	bottomBar := container.NewVBox(
 		container.NewVBox(
 			filmstripLabel,
-			filmstripThumbnails,
+			filmstripContainer,
 		),
 		statusBar,
 	)
@@ -288,11 +314,11 @@ func main() {
 	// CONTENEDOR PRINCIPAL (BORDER)
 	//----------------------------------------------------------------------
 	mainContent := container.NewBorder(
-		topBars,            // top
-		bottomBar,          // bottom
-		leftTabs,           // left
-		rightTabs,          // right
-		imageViewContainer, // center
+		topBars,             // top
+		bottomBar,           // bottom
+		leftTabs,            // left
+		rightTabs,           // right
+		imageView.Container, // center
 	)
 
 	myWindow.SetContent(mainContent)
